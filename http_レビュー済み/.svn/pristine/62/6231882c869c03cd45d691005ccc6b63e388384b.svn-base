@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+
+	<int:gateway id="requestGateway"
+		service-interface="org.springframework.integration.samples.http.ClientAPComand"
+		default-request-channel="requestChannel"
+		default-reply-channel="responseChannel" />
+
+	<int:channel id="requestChannel"/>
+
+	<int-http:outbound-gateway request-channel="requestChannel"
+		url="http://localhost:8080/http/receiveGateway" http-method="POST"
+		expected-response-type="byte[]"
+		reply-channel="channelout" />
+	<!--				expected-response-type="java.lang.String"	       expected-response-type="byte[]"-->
+
+	<int:channel id="responseChannel"/>
+
+	
+	<int:channel id="channelout"></int:channel>
+	
+	<!-- HTTPのoutboundendpointのbean定義 -->
+	 <bean id="dbResultBean"
+	  class="org.springframework.integration.http.inbound.HttpRequestHandlingMessagingGateway">
+		  <property name="requestChannel" ref="channelout" />
+		  <property name="replyChannel" ref="responseChannel" />
+	</bean>
+		 
+	<!-- シリアライズ化 -->
+	<int:payload-deserializing-transformer input-channel="channelout" output-channel="responseChannel"></int:payload-deserializing-transformer>
+</beans>

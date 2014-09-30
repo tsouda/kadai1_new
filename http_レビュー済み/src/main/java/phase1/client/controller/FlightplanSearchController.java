@@ -1,0 +1,134 @@
+package phase1.client.controller;
+
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import phase1.client.command.FlightplanSearch;
+import phase1.client.validator.FlightplanSearchValidator;
+import phase1.server.bean.DbResultBean;
+import phase1.server.bean.FlightPlanBean;
+import phase1.server.bean.FlightPlanBeanListBean;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import phase1.client.AP.ClientAPComand;
+
+/*
+ * クラス名:FlightplanSearchController
+ * 機能:フライトプラン検索のコントローラー
+ */
+
+@Controller
+public class FlightplanSearchController {
+//	private static final long serialVersionUID = 1L;
+	public static final short MIN_DBC = 1;		// 最小DBC
+	public static final short MAX_DBC = 32767;	// 最大DBC
+	
+	public static final int NG = -1;	// 入力異常
+	public static final int OK_ONE = 1;	// 単一検索
+	public static final int OK_ALL = 2;	// 全件検索
+
+	// リクエストハンドラ
+	// value:リクエストの値 リクエストされたアドレスを示す文字列
+	// method:HTTPメソッド(GET/POST)の種類を指定する
+	// Get時起動メソッド
+	@RequestMapping(value = "/search" , method = RequestMethod.GET)
+	public String search(HttpServletRequest req,HttpServletResponse res){
+
+		// message初期化
+		req.getSession().setAttribute("message", "検索するDBCを入力してください。");
+
+		return "search";
+	}
+	// Post時起動メソッド
+	@RequestMapping(value = "/search" , method = RequestMethod.POST)
+	public String form(Model model, HttpServletRequest req,HttpServletResponse res){
+
+// STARTタグ
+System.out.println("FlightplanSearchController ### START ###");
+
+		// 内部変数定義
+		int checkDBCFlag = NG; 	// 入力値判定結果変数
+		
+		// 入力値チェック用オブジェクト生成
+		FlightplanSearchValidator fsv = new FlightplanSearchValidator();
+
+		// 入力値取得
+		String strDBC = req.getParameter("input1");
+		
+		// 入力正常判定
+		checkDBCFlag = fsv.validate(strDBC);
+
+System.out.println("checkDBCFlag:"+checkDBCFlag);
+
+System.out.println("strDBC:"+strDBC);
+System.out.println("strDBC.length:"+strDBC.length());
+
+		// 入力正常判定結果で分岐
+		if(NG == checkDBCFlag){
+			// 入力NGの場合、再入力メッセージ
+			// message設定
+			req.getSession().setAttribute("message", "半角"+MIN_DBC+"～"+MAX_DBC+"で入力してください。\n");
+
+			// メッセージ出力して入力画面へ再帰
+			return "search";
+		}else{
+			// 入力値正常の場合、メッセージ初期化
+			req.getSession().setAttribute("message", "");
+		}
+		
+		if(OK_ALL == checkDBCFlag){
+			// 半角スペースとかを空白化
+			strDBC = "";
+		}
+
+		// DBC送信
+System.out.println("sendDBC");
+		ApplicationContext context = new ClassPathXmlApplicationContext("/META-INF/spring/integration/client-apsarver-outbound-config.xml");
+		ClientAPComand requestGateway = context.getBean("requestGateway", ClientAPComand.class);
+		
+		// 送信して返却オブジェクト取得
+		// 個別実装時はエラーだけど結合したら通るはず・・・
+		DbResultBean result = requestGateway.echo("TestData", strDBC);
+
+		// フライトプランリスト取得
+		ArrayList<FlightPlanBean> fpList = result.getFlightplanlist();
+
+System.out.println("DB接続結果:"+result.getDbconnectionflag());
+System.out.println("検索結果:"+result.getDbsearchflag());
+
+		//取得結果処理
+		// 送信結果別動作
+		// DB接続判定
+		if(true == result.getDbconnectionflag()){
+			// DB接続成功
+			if(true == result.getDbsearchflag()){
+				// フライトプランリスト取得成功
+				model.addAttribute("list", fpList);
+				// フライトプラン画面表示
+System.out.println("フライトプラン画面表示");
+System.out.println("FlightplanSearchController ### END ###");
+				return "searchResult";
+			}else{
+				// フライトプラン取得失敗
+				// フライトプラン取得エラー画面
+System.out.println("フライトプラン取得エラー");
+System.out.println("FlightplanSearchController ### END ###");
+				return "searchError";
+			}
+		}else{
+			// DB接続失敗
+			// DB接続エラー画面
+System.out.println("DB接続エラー");
+System.out.println("FlightplanSearchController ### END ###");
+			return "dbConError";
+		}
+	}
+}	
+		

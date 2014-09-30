@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+    
+    <!-- Uncomment and add your base-package here:
+         <context:component-scan
+            base-package="org.springframework.samples.service"/>  -->
+
+	<!-- SampleServiceの設定 -->
+	<bean id="sampleService" class="test.server.SampleService">
+	</bean>
+
+	<!-- FlightPlanBeanの設定 -->
+	<bean id="flightPlanBean" class="phase1.server.bean.FlightPlanBean">
+	</bean>
+	
+	<!-- FlightPlanBeanListBeanの設定 -->
+	<bean id="flightPlanBeanListBean" class="phase1.server.bean.FlightPlanBeanListBean">
+	</bean>
+	
+	<!-- DbResultBeanの設定 -->
+	<bean id="dbResultBean" class="phase1.server.bean.DbResultBean">
+	</bean>
+	
+	<!-- DatabaseServiceの設定 -->
+	<bean id="databaseService" class="phase1.server.logic.DatabaseService">
+	</bean>
+	
+	<!-- ApServerDbSearchの設定 -->
+	<bean id="apServerDbSearch" class="phase1.server.logic.ApServerDbSearch">
+
+	</bean>
+
+</beans>

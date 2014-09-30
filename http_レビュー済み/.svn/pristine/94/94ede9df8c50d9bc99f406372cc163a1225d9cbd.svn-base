@@ -1,0 +1,328 @@
+package phase1.server.logic;
+
+import java.sql.*;
+
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.beans.SamePropertyValuesAs.*;
+
+import java.util.ArrayList;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.postgresql.util.PSQLException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import phase1.server.bean.FlightPlanBean;
+import phase1.server.bean.FlightPlanBeanListBean;
+import util.TestDao;
+import util.TestMock;
+import util.Prop;
+
+public class DatabaseServiceTest {
+/******************準備エリア↓**************************/
+	/**
+	 * データベースへの接続設定を行う
+	 */
+	public static ApplicationContext context;
+
+	ResultSet rs = null;
+	static Statement stmt = null;
+	static Connection conn = null;
+
+	/**
+	 * 設定ファイルを用いずにDB接続を行うための準備
+	 * 
+	 * @throws Exception
+	 */
+	@BeforeClass
+	public static void beforeClass() throws Exception {
+
+		// Oracle JDBC Driverのロード
+		Class.forName("org.postgresql.Driver");
+		// Oracle8iに接続
+		conn = DriverManager
+				.getConnection("jdbc:postgresql://localhost:5432/phase_one?user=postgres&password=postgres");
+		// ステートメントを作成
+		stmt = conn.createStatement();
+	}
+
+	/**
+	 * 後処理　コネクションの類を閉じる
+	 */
+	@AfterClass
+	public static void afterClass() {
+		try {
+			if (stmt != null) {
+				stmt.close();
+			}
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			System.out.println("クローズ処理で何らかのエラー");
+		}
+
+	}
+
+	/**
+	 * テーブルがあってもなくてもテーブルを作成し（すでに存在する場合はエラーキャッチ）
+	 * applicationCOntextをnewして（テストクラス共通で使用する） すべてのレコードを削除し レコードを二件挿入する
+	 */
+	@Before
+	public void before() {
+		// テーブルがない場合、テーブルを作成する
+		try {
+			stmt.executeUpdate("CREATE TABLE flight_plan (    dbc smallint NOT NULL,    departure character varying NOT NULL,    dept_longitude numeric(10,6) NOT NULL,dept_latitude numeric(10,6) NOT NULL,    dept_time time without time zone NOT NULL,    arrival character varying NOT NULL,    arriv_longitude numeric(10,6) NOT NULL,    arriv_latitude numeric(10,6) NOT NULL,    arriv_time time without time zone NOT NULL,one_longitude numeric(10,6) NOT NULL,    one_latitude numeric(10,6) NOT NULL,    one_time time without time zone NOT NULL,    two_longitude numeric(10,6) NOT NULL,    two_latitude numeric(10,6) NOT NULL,    two_time time without time zone NOT NULL,three_longitude numeric(10,6) NOT NULL,    three_latitude numeric(10,6) NOT NULL,    three_time time without time zone NOT NULL,    four_longitude numeric(10,6) NOT NULL,    four_latitude numeric(10,6) NOT NULL,    four_time time without time zone NOT NULL);");
+		} catch (SQLException e) {
+			//e.printStackTrace();
+			System.out.println("すでにテーブルが存在する");
+		}
+		// すべてのレコードを削除する
+		System.out.println("@test");
+		context = new ClassPathXmlApplicationContext(
+				"/META-INF/spring/integration/applicationContext_for_Test.xml");
+		TestDao dao = context.getBean("testDao", TestDao.class);
+		dao.deleteAll();
+		// 期待値をinsertする
+
+		TestMock moc = new TestMock();
+
+		FlightPlanBean bean = moc.mockSet();
+		FlightPlanBean bean2 = moc.mockSet2();
+		dao.insertOne(bean);
+		dao.insertOne(bean2);
+	}
+
+	/**
+	 * flight_planテーブルがあってもなくても削除する DB接続失敗テスト用の前処理
+	 */
+	public void dropTbl() {
+		try {
+			stmt.executeUpdate("drop table flight_plan ;");
+		} catch (PSQLException e) {
+			System.out.println("drop　error");
+			// e.printStackTrace();
+		} catch (SQLException e) {
+			System.out.println("drop　error");
+		}
+	}
+
+	/**
+	 * フライトプランテーブルからデータをすべて削除する 一件もデータが存在しない場合のテスト用前処理
+	 */
+	public void before_deleteAll() {
+
+		// すべてのレコードを削除する
+		context = new ClassPathXmlApplicationContext(
+				"/META-INF/spring/integration/applicationContext_for_Test.xml");
+		TestDao dao = context.getBean("testDao", TestDao.class);
+		dao.deleteAll();
+
+	}
+/******************準備エリア↑　ここまで**************************/
+	/**
+	 * 全件検索　DB接続失敗 リストビーンの中のリストと、フラグを比較
+	 */
+	@Test
+	public void executeSlect_All_DBNG_001_001() {
+
+		// 前準備として、テーブルを削除する
+		dropTbl();
+		// 本番実行
+		DatabaseService ds = new DatabaseService();
+		FlightPlanBeanListBean actualListBean = ds.executeSelect();
+		ArrayList<FlightPlanBean> actualList = actualListBean
+				.getFlightListBeanList();
+
+		// 値突合せ
+		// DB接続フラグが偽であること
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.FAILED));
+		// リストがnullであること
+		assertThat(actualList, is(nullValue()));
+
+	}
+
+	/**
+	 * @brief　全件検索　複数検索成功 mockを使用して期待値をオブジェクト１とオブジェクト２に詰め、そのオブジェクトをリストに詰める
+	 *        実際のコードを実行して結果をFlightPlanBeanListBeanの形で得る
+	 *        FlightPlanBeanListBeanからリストを取り出す オブジェクトを一つずつ取り出してオブジェクトごと比較する
+	 *        DB接続フラグを比較する
+	 */
+	@Test
+	public void executeSlect_All_get_objects_001_002() {
+
+		ArrayList<FlightPlanBean> exepectedList = new ArrayList<FlightPlanBean>(); // 期待値を格納するBeanを格納するリスト
+		FlightPlanBean exepectedBean = context.getBean("bean",
+				FlightPlanBean.class); // 期待値を格納するBean
+		FlightPlanBean exepectedBean2 = context.getBean("bean",
+				FlightPlanBean.class); // 期待値を格納するBean2
+		// 期待値をオブジェクトにつめる
+		TestMock moc = new TestMock();
+		exepectedBean = moc.mockSet();
+		exepectedList.add(exepectedBean);
+		exepectedBean2 = moc.mockSet2();
+		// 期待値オブジェクトをリストに詰める
+		exepectedList.add(exepectedBean2);
+
+		// 実行値の取得
+		DatabaseService ds = new DatabaseService();
+		FlightPlanBeanListBean actualListBean = ds.executeSelect();
+		ArrayList<FlightPlanBean> actualList = new ArrayList<FlightPlanBean>();
+
+		actualList = actualListBean.getFlightListBeanList();
+		// フライトプランの中身照合
+		for (int index = 0; index < actualList.size(); index++) {
+			FlightPlanBean actualBean = context.getBean("bean",
+					FlightPlanBean.class);
+			actualBean = actualList.get(index);
+			exepectedBean = exepectedList.get(index);
+			// このメソッドでオブジェクトの中身丸ごとを比較できる
+			assertThat(exepectedBean, is(samePropertyValuesAs(actualBean)));// dbc
+		}
+		// DB接続フラグ照合
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.SUCCESS));// dbc
+	}
+
+	/**
+	 * 全件検索　検索結果０件
+	 */
+	@Test
+	public void executeSlect_All_No_Recodes_001_003() {
+		// 前処理　すべてのレコードを削除する
+		before_deleteAll();
+
+		// 実行値の取得
+		DatabaseService ds = new DatabaseService();
+		FlightPlanBeanListBean actualListBean = ds.executeSelect();
+		// リストベーンからリストの取得
+		ArrayList<FlightPlanBean> actualList = actualListBean
+				.getFlightListBeanList();
+		// DB接続フラグがtrueが比較
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.SUCCESS));
+		// リストがnullが比較
+		assertThat(actualList, is(nullValue()));
+	}
+
+	/**
+	 * 一件検索DB接続失敗
+	 */
+	@Test
+	public void executeSlect_One_DBNG_001_004() {
+		dropTbl();
+		// 本番実行
+		DatabaseService ds = new DatabaseService();
+		FlightPlanBeanListBean actualListBean = ds.executeSelect(Prop.DBC1);
+		ArrayList<FlightPlanBean> actualList = actualListBean
+				.getFlightListBeanList();
+		// 値突合せ
+		// DB接続フラグ=false
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.FAILED));
+		// リストがnullか比較
+		assertThat(actualList, is(nullValue()));
+	}
+
+	/**
+	 * 一件検索　検索成功
+	 */
+	@Test
+	public void executeSlect_One_get_objects_001_005() {
+
+		FlightPlanBean exepectedBean = context.getBean("bean",
+				FlightPlanBean.class); // 期待値を格納するBean
+		// 期待値をつめる
+		TestMock moc = new TestMock();
+		exepectedBean = moc.mockSet();
+
+		// 実行値の取得
+		DatabaseService ds = new DatabaseService();
+		FlightPlanBeanListBean actualListBean = ds.executeSelect(Prop.DBC1);
+		ArrayList<FlightPlanBean> actualList = actualListBean
+				.getFlightListBeanList();
+
+		// 一番最初のリスト要素を取り出す
+		FlightPlanBean actualBean = actualList.get(Prop.FIRST_OBJECT);
+
+		// オブジェクトの中身ごと比較する
+		assertThat(actualBean, is(samePropertyValuesAs(exepectedBean)));
+		// DB接続フラグ照合
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.SUCCESS));
+	}
+
+	/**
+	 * 一件検索　検索結果ﾅｼ
+	 */
+	@Test
+	public void executeSlect_One_No_Recodes_001_006() {
+
+		// 前処理としてすべてのレコードを削除する
+		before_deleteAll();
+
+		// 実行値を格納する変数宣言
+		DatabaseService ds = new DatabaseService();
+		ArrayList<FlightPlanBean> actualList = new ArrayList<FlightPlanBean>();
+		FlightPlanBean actualBean = context.getBean("bean",
+				FlightPlanBean.class);
+		// 実行値の取得
+		FlightPlanBeanListBean actualListBean = ds.executeSelect(Prop.DBC1);
+		actualList = actualListBean.getFlightListBeanList();
+		actualBean = actualList.get(Prop.FIRST_OBJECT);
+
+		// フライトプランの中身照合
+		assertThat(actualBean, is(nullValue()));
+		// DB接続フラグ照合
+		assertThat(actualListBean.getsuccessFlg(), is(Prop.SUCCESS));
+	}
+
+	/**
+	 * 一見挿入　DB接続失敗
+	 */
+	@Test
+	public void executeInsert_DBNG_007() {
+
+		// 前処理としてテーブルを削除する
+		dropTbl();
+
+		DatabaseService ds = new DatabaseService();
+		// 本番実行
+		TestMock moc = new TestMock();
+		FlightPlanBean actualBean = moc.mockSet();
+		boolean actualResult = ds.executeInsert(actualBean);
+
+		// 登録件数実行 テーブルがないので失敗するため廃止
+		// assertThat(dao.countAll(),is(Prop.NO_RECODES_SIZE));
+		// 更新結果フラグが失敗か比較
+		assertThat(actualResult, is(Prop.FAILED));
+	}
+
+	/**
+	 * 一見挿入成功
+	 */
+	@Test
+	public void executeInsert_DBOK_001_008() {
+		TestDao dao = context.getBean("testDao", TestDao.class);
+		// 前処理としてすべてのレコードを削除する
+		before_deleteAll();
+
+		// 実行値を格納する変数宣言
+		DatabaseService ds = new DatabaseService();
+
+		// 実行値の取得
+		TestMock moc = new TestMock();
+		FlightPlanBean actualBean = moc.mockSet();
+		boolean actualResult = ds.executeInsert(actualBean);
+
+		// 実行値（DB値）の取得
+		FlightPlanBean expectedBean = dao.selectOne(actualBean.getDbc());
+
+		// DBとインサート内容の比較
+		assertThat(actualBean, is(samePropertyValuesAs(expectedBean)));
+		// DB接続フラグ照合
+		assertThat(actualResult, is(Prop.SUCCESS));
+	}
+
+}

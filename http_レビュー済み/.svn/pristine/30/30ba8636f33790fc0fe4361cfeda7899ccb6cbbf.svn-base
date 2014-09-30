@@ -1,0 +1,18 @@
+package phase1.server.logic;
+
+import java.sql.SQLException;
+
+public class Main {
+	
+	public static void main(String args[]){
+		DatabaseServiceTest dt = new DatabaseServiceTest();
+		try {
+			dt.beforeClass();
+			dt.dropTbl();
+		} catch (Exception e) {
+			// TODO ©“®¶¬‚³‚ê‚½ catch ƒuƒƒbƒN
+			e.printStackTrace();
+		}
+		System.out.println("to");
+	}
+}

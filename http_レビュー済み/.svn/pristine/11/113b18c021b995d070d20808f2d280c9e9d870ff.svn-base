@@ -1,0 +1,68 @@
+/*
+ * Copyright 2002-2011 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.springframework.integration.samples.http;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+
+import org.apache.log4j.Logger;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import phase1.server.bean.DbResultBean;
+import phase1.server.bean.FlightPlanBean;
+/**
+ * @author Oleg Zhurakousky
+ *
+ */
+public class ClientAPDemo {
+	
+	private static Logger logger = Logger.getLogger(ClientAPDemo.class);
+
+	/**
+	 * @param args
+	 * @throws UnsupportedEncodingException 
+	 * モックです（本番は使いません）
+	 */
+	public static void main(String[] args) throws UnsupportedEncodingException {
+		ApplicationContext context = new ClassPathXmlApplicationContext("/META-INF/spring/integration/client-apsarver-outbound-config.xml");
+		ClientAPComand requestGateway = context.getBean("requestGateway", ClientAPComand.class);
+		//戻り値を決める　String byte[]
+		DbResultBean reply = requestGateway.echo("TestData", "99");
+		//logger.info("Replied with: " + replyo);
+		
+		//byte[]配列からString変換する
+		//String reply = new String(replyo, "UTF-8");
+		//logger.info("Replied with: " + reply);
+		//DbResultBeanオブジェクトからString変換する
+
+		logger.info("Replied with: " + reply);
+		
+		ArrayList<FlightPlanBean> list = reply.getFlightplanlist();
+		System.out.println(reply.getDbconnectionflag());
+		System.out.println(reply.getDbsearchflag());
+		
+		if(list == null){
+			System.out.println(list);
+		}
+		else{
+			for(FlightPlanBean fpb: list){
+				System.out.println(fpb.getArrival());
+			}
+		}
+	}
+
+}

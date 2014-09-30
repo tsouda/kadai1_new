@@ -1,0 +1,183 @@
+package junit.test.logic;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+
+import org.junit.Test;
+
+//自作
+import phase1.server.bean.DbResultBean;
+import phase1.server.bean.FlightPlanBean;
+import phase1.server.logic.ApServerDbSearch;
+
+public class ApServerDbSearchTest {
+
+	/**
+	 * 正常系
+	 * dbc = null
+	 */
+	@Test
+	public void testSearchAll1() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch(null);
+		
+		//戻り値が正常か確認する
+		assertTrue(odbresultbean.getDbconnectionflag());
+		assertTrue(odbresultbean.getDbsearchflag());
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		for(FlightPlanBean oflightplanbean:list){
+			assertEquals(oflightplanbean.getArrival(),"TITOSE");
+		}
+	}
+	
+	/**
+	 * 正常
+	 * dbc=空文字列
+	 */
+	@Test
+	public void testSearchAll2() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("");
+		
+		//戻り値が正常か確認する
+		assertTrue(odbresultbean.getDbconnectionflag());
+		assertTrue(odbresultbean.getDbsearchflag());
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		for(FlightPlanBean oflightplanbean:list){
+			assertEquals(oflightplanbean.getArrival(),"TITOSE");
+		}
+	}
+	
+	/**
+	 * 正常
+	 * dbc=空白
+	 */
+	@Test
+	public void testSearchAll3() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("　");
+		
+		//戻り値が正常か確認する
+		assertTrue(odbresultbean.getDbconnectionflag());
+		assertTrue(odbresultbean.getDbsearchflag());
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		for(FlightPlanBean oflightplanbean:list){
+			assertEquals(oflightplanbean.getArrival(),"TITOSE");
+		}
+	}
+	
+	/**
+	 * 正常
+	 * dbc=1（許容範囲内）
+	 * dbcがDBに存在する
+	 */
+	@Test
+	public void testSearchSingle1() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("1");
+		
+		//戻り値が正常か確認する
+		assertTrue(odbresultbean.getDbconnectionflag());
+		assertTrue(odbresultbean.getDbsearchflag());
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		for(FlightPlanBean oflightplanbean:list){
+			assertEquals(oflightplanbean.getArrival(),"TITOSE");
+		}
+	}
+	
+	/**
+	 * 正常
+	 * dbc=-3（許容範囲外）
+	 */
+	@Test
+	public void testSearchSingle2() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("-3");
+		
+		//戻り値が正常か確認する
+		assertEquals(odbresultbean,null);
+	}
+	
+	/**
+	 * 正常
+	 * dbc=893333（許容範囲外）
+	 */
+	@Test
+	public void testSearchSingle3() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("893333");
+		
+		//戻り値が正常か確認する
+		assertEquals(odbresultbean,null);
+	}
+	
+	/**
+	 * 準正常
+	 * dbc=88（許容範囲内）
+	 * dbcがDBに存在しない
+	 */
+	@Test
+	public void testSearchSingle4() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("88");
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		//戻り値が正常か確認する
+		assertTrue(odbresultbean.getDbconnectionflag());
+		assertFalse(odbresultbean.getDbsearchflag());
+		assertEquals(list, null);
+	}
+	
+	/**
+	 * 異常
+	 * DB接続エラー
+	 * dbc=99（許容範囲内）
+	 */
+	@Test
+	public void testSearchDB1() {
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		DbResultBean odbresultbean = new DbResultBean();
+		ArrayList<FlightPlanBean> list = new ArrayList<FlightPlanBean>();
+		
+		odbresultbean = oapserverdbsearch.DbSearch("99");
+		
+		list = odbresultbean.getFlightplanlist();
+		
+		//戻り値が正常か確認する
+		assertThat(odbresultbean.getDbconnectionflag(),is(false));
+		assertFalse(odbresultbean.getDbconnectionflag());
+		assertFalse(odbresultbean.getDbsearchflag());
+		assertEquals(list, null);
+	}
+
+}

@@ -1,0 +1,18 @@
+package util;
+
+public  class Prop {
+//定数的なフィールドを保持するクラス
+	public final static boolean SUCCESS =true;
+	public final static boolean FAILED =false;
+	public final static short DBC1 =1;
+	public final static short DBC2 =2;
+	public final static short DBC_SI =11;//結合試験用DBC
+	public final static short DBC_ERR =34;//検索結果ナシ用DBC
+	public final static short ERRORCODE =-1;
+	public final static int NO_RECODES_SIZE =0;
+	public final static int ONE =1;
+	public final static int FIRST_OBJECT =0;
+	public final static int ALL_RECORDE_NUM =2;//DB-送受信のSIの、全件検索の検索結果数
+	public final static int SINGLE_RECODE =1;//DB-送受信のSIの単一検索の検索結果数
+
+}

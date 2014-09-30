@@ -1,0 +1,76 @@
+package util;
+
+
+
+import java.util.List;
+
+import org.apache.ibatis.session.SqlSession;
+import org.springframework.integration.samples.http.ClientAPDemo;
+
+
+
+
+
+
+
+
+import phase1.server.bean.FlightPlanBean;
+import phase1.server.logic.DatabaseService;
+
+public class TestDao {
+
+	
+	private SqlSession sqlSession;
+	
+	  public void setSqlSession(SqlSession sqlSession) {
+		    this.sqlSession = sqlSession;
+		  }
+
+
+		  
+		//1件検索
+		  public FlightPlanBean selectOne(short dbc) {
+			  FlightPlanBean bean = DatabaseService.CONTEXT.getBean("ｂean",FlightPlanBean.class);
+			  bean = sqlSession.selectOne("util.TestMapper.selectOne",dbc);
+
+			  return  bean;
+		  }
+		  
+		  public int  deleteAll() {
+				return sqlSession.update("util.TestMapper.deleteAll");
+		  }
+		  
+		  public int  dropTbl() {
+				return sqlSession.update("util.TestMapper.dropTbl");
+		  }
+		  
+		  public int  countAll() {
+				return sqlSession.selectOne("util.TestMapper.countAll");
+		  }
+		  
+		  public int insertOne(FlightPlanBean bean) {
+			  
+			  int result = 0;//更新結果。更新が成功すると１が入る
+
+			  short dbc = bean.getDbc();
+			  
+			  try{
+			  if(0 == sqlSession.update("phase1.server.mapper.FlightPlanMapper.selectBeforeInsert",dbc)){
+				  	result =  sqlSession.update("phase1.server.mapper.FlightPlanMapper.insertOne",bean);
+			  }else{//インサートするDBCと重複するフライトプランがあった場合は削除してからインサートする
+				 //重複の削除
+				sqlSession.update("phase1.server.mapper.FlightPlanMapper.deleteBeforeInsert",dbc);
+				//新規レコードの挿入
+				result =  sqlSession.update("phase1.server.mapper.FlightPlanMapper.insertOne",bean);
+				  
+			  }
+			  }catch(Exception e){
+				  e.printStackTrace();
+				  System.out.println("データベースとの接続において何らかのエラーが発生しました");
+			  }
+		    return  result;
+
+		  }
+		  
+		  
+	}

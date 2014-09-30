@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="phase1.server.mapper.FlightPlanMapper">
+
+
+	<select id="selectAll" resultType="phase1.server.bean.FlightPlanBean">
+		select * from flight_plan order by dbc;
+	</select>
+	
+	<select id="selectOne" parameterType="short" resultType="phase1.server.bean.FlightPlanBean" >
+		select * from flight_plan  where dbc =#{dbc};
+	</select>
+	  
+    <select id="selectBeforeInsert" parameterType="short" resultType="int" >
+		select count(*) from flight_plan  where dbc =#{dbc};
+	</select>
+	
+	<select id="deleteBeforeInsert" parameterType="short"  >
+		delete from  flight_plan  where dbc =#{dbc};
+	</select>
+  
+	<insert id="insertOne" parameterType="phase1.server.bean.FlightPlanBean" >
+		insert into flight_plan(dbc ,departure ,dept_longitude  ,dept_latitude ,dept_time ,
+		arrival ,arriv_longitude  ,arriv_latitude ,
+		arriv_time ,one_longitude  ,one_latitude ,one_time ,
+		two_longitude  ,two_latitude ,two_time ,
+		three_longitude ,three_latitude ,three_time ,
+		four_longitude  ,four_latitude ,four_time ) 
+		values
+		(#{dbc} ,#{departure} ,#{dept_longitude } ,
+		#{dept_latitude} ,#{dept_time },#{arrival} ,
+		#{arriv_longitude}  ,#{arriv_latitude} ,#{arriv_time} ,
+		#{one_longitude}  ,#{one_latitude} ,#{one_time} ,
+		#{two_longitude}  ,#{two_latitude} ,#{two_time} ,
+		#{three_longitude} ,#{three_latitude} ,#{three_time} ,
+		#{four_longitude}  ,#{four_latitude} ,
+		#{four_time} ) ;  
+	</insert>
+</mapper>

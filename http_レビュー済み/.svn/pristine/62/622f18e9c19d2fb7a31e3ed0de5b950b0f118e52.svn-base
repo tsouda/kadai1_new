@@ -1,0 +1,197 @@
+package util;
+
+import java.sql.Time;
+
+import phase1.server.bean.FlightPlanBean;
+/**
+ * メソッドに渡すBeanに値を詰めるドライバクラス
+ * @author iguchihitomi
+ *
+ */
+public class TestMock {
+	/**
+	 * １レコード目のbeanに値を詰める
+	 * @return
+	 */
+	public FlightPlanBean mockSet() {
+		FlightPlanBean bean = new FlightPlanBean();
+		short dbc =1;
+		bean.setDbc(dbc);
+		bean.setDeparture("NARITA");
+		bean.setDept_latitude(2d);
+		bean.setDept_longitude(3d);
+		bean.setDept_time(Time.valueOf("10:10:10"));
+
+		bean.setArrival("ISUTANBUL");
+		bean.setArriv_latitude(4d);
+		bean.setArriv_longitude(5d);
+		bean.setArriv_time(Time.valueOf("11:11:11"));
+
+		bean.setOne_latitude(6d);
+		bean.setOne_longitude(7d);
+		bean.setOne_time(Time.valueOf("12:12:12"));
+
+		bean.setTwo_latitude(8d);
+		bean.setTwo_longitude(9d);
+		bean.setTwo_time(Time.valueOf("13:13:13"));
+
+		bean.setThree_latitude(10d);
+		bean.setThree_longitude(11d);
+		bean.setThree_time(Time.valueOf("14:14:14"));
+
+		bean.setFour_latitude(12d);
+		bean.setFour_longitude(13d);
+		bean.setFour_time(Time.valueOf("15:15:15"));
+
+		return bean;
+	}
+	
+	
+	public FlightPlanBean mockSet2() {
+		/**
+		 * ２レコード目のbeanに値を詰める
+		 * @return
+		 */
+		FlightPlanBean bean = new FlightPlanBean();
+
+		short dbc =2;
+		bean.setDbc(dbc);
+		bean.setDeparture("HIROSHIMA");
+		bean.setDept_latitude(15d);
+		bean.setDept_longitude(16d);
+		bean.setDept_time(Time.valueOf("16:16:16"));
+
+		bean.setArrival("TITOSE");
+		bean.setArriv_latitude(17d);
+		bean.setArriv_longitude(18d);
+		bean.setArriv_time(Time.valueOf("17:17:17"));
+
+		bean.setOne_latitude(19d);
+		bean.setOne_longitude(20d);
+		bean.setOne_time(Time.valueOf("18:18:18"));
+
+		bean.setTwo_latitude(21d);
+		bean.setTwo_longitude(22d);
+		bean.setTwo_time(Time.valueOf("19:19:19"));
+
+		bean.setThree_latitude(23d);
+		bean.setThree_longitude(24d);
+		bean.setThree_time(Time.valueOf("20:20:20"));
+
+		bean.setFour_latitude(25d);
+		bean.setFour_longitude(26d);
+		bean.setFour_time(Time.valueOf("21:21:21"));
+
+		return bean;
+	}
+	
+	/**
+	 * 重複登録の前準備用
+	 * @param dbc
+	 * @return
+	 */
+	public FlightPlanBean mockSet3(short dbc) {
+		FlightPlanBean bean = new FlightPlanBean();
+		bean.setDbc(dbc);
+		bean.setDeparture("BEFORE");
+		bean.setDept_latitude(315d);
+		bean.setDept_longitude(316d);
+		bean.setDept_time(Time.valueOf("16:16:00"));
+
+		bean.setArrival("BEFORE2");
+		bean.setArriv_latitude(317d);
+		bean.setArriv_longitude(318d);
+		bean.setArriv_time(Time.valueOf("17:17:00"));
+
+		bean.setOne_latitude(319d);
+		bean.setOne_longitude(320d);
+		bean.setOne_time(Time.valueOf("18:18:00"));
+
+		bean.setTwo_latitude(321d);
+		bean.setTwo_longitude(322d);
+		bean.setTwo_time(Time.valueOf("19:19:00"));
+
+		bean.setThree_latitude(323d);
+		bean.setThree_longitude(324d);
+		bean.setThree_time(Time.valueOf("20:20:00"));
+
+		bean.setFour_latitude(325d);
+		bean.setFour_longitude(326d);
+		bean.setFour_time(Time.valueOf("21:21:00"));
+
+		return bean;
+	}
+	/**
+	 * 重複登録の確認用
+	 * @param dbc
+	 * @return
+	 */
+	public FlightPlanBean mockSet4(short dbc) {
+		FlightPlanBean bean = new FlightPlanBean();
+		bean.setDbc(dbc);
+		bean.setDeparture("NARITA");
+		bean.setDept_latitude(2d);
+		bean.setDept_longitude(3d);
+		bean.setDept_time(Time.valueOf("10:10:10"));
+
+		bean.setArrival("ISUTANBUL");
+		bean.setArriv_latitude(4d);
+		bean.setArriv_longitude(5d);
+		bean.setArriv_time(Time.valueOf("11:11:11"));
+
+		bean.setOne_latitude(6d);
+		bean.setOne_longitude(7d);
+		bean.setOne_time(Time.valueOf("12:12:12"));
+
+		bean.setTwo_latitude(8d);
+		bean.setTwo_longitude(9d);
+		bean.setTwo_time(Time.valueOf("13:13:13"));
+
+		bean.setThree_latitude(10d);
+		bean.setThree_longitude(11d);
+		bean.setThree_time(Time.valueOf("14:14:14"));
+
+		bean.setFour_latitude(12d);
+		bean.setFour_longitude(13d);
+		bean.setFour_time(Time.valueOf("15:15:15"));
+
+		return bean;
+	}
+	
+	/**
+	 * 重複登録の確認用
+	 * @param dbc
+	 * @return
+	 */
+	public FlightPlanBean mockSetSI() {
+		FlightPlanBean bean = new FlightPlanBean();
+		bean.setDbc(Prop.DBC_SI);
+		bean.setDeparture("NARITA");
+		bean.setDept_latitude(2d);
+		bean.setDept_longitude(3d);
+		bean.setDept_time(Time.valueOf("10:10:10"));
+
+		bean.setArrival("ISUTANBUL");
+		bean.setArriv_latitude(4d);
+		bean.setArriv_longitude(5d);
+		bean.setArriv_time(Time.valueOf("11:11:11"));
+
+		bean.setOne_latitude(6d);
+		bean.setOne_longitude(7d);
+		bean.setOne_time(Time.valueOf("12:12:12"));
+
+		bean.setTwo_latitude(8d);
+		bean.setTwo_longitude(9d);
+		bean.setTwo_time(Time.valueOf("13:13:13"));
+
+		bean.setThree_latitude(10d);
+		bean.setThree_longitude(11d);
+		bean.setThree_time(Time.valueOf("14:14:14"));
+
+		bean.setFour_latitude(12d);
+		bean.setFour_longitude(13d);
+		bean.setFour_time(Time.valueOf("15:15:15"));
+
+		return bean;
+	}
+}

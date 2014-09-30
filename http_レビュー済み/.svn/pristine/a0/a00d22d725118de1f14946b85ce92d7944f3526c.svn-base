@@ -1,0 +1,326 @@
+package phase1.server.logic;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.*;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.postgresql.util.PSQLException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import phase1.server.bean.DbResultBean;
+import phase1.server.bean.FlightPlanBean;
+import util.Prop;
+import util.TestDao;
+import util.TestMock;
+/**
+ * ０４データベース制御と０７クライアント-APサーバ間の送受信の結合試験
+ * @author iguchihitomi
+ *
+ */
+public class ApServerDbSearchTest_SI {
+
+	/****************** 準備エリア↓ **************************/
+	/**
+	 * データベースへの接続設定を行う
+	 */
+	public static ApplicationContext context;
+
+	ResultSet rs = null;
+	static Statement stmt = null;
+	static Connection conn = null;
+
+	/**
+	 * 設定ファイルを用いずにDB接続を行うための準備
+	 * 
+	 * @throws Exception
+	 */
+	@BeforeClass
+	public static void beforeClass() throws Exception {
+		context = new ClassPathXmlApplicationContext(
+				"/META-INF/spring/integration/applicationContext_for_Test.xml");
+		// Oracle JDBC Driverのロード
+		Class.forName("org.postgresql.Driver");
+		// Oracle8iに接続
+		conn = DriverManager
+				.getConnection("jdbc:postgresql://localhost:5432/phase_one?user=postgres&password=postgres");
+		// ステートメントを作成
+		stmt = conn.createStatement();
+	}
+
+	/**
+	 * 後処理　コネクションの類を閉じる
+	 */
+	@AfterClass
+	public static void afterClass() {
+		try {
+			if (stmt != null) {
+				stmt.close();
+			}
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			System.out.println("クローズ処理で何らかのエラー");
+		}
+
+	}
+
+	/**
+	 * 各テストの前に毎度実行される テーブルがあってもなくてもテーブルを作成し（すでに存在する場合はエラーキャッチ）
+	 * applicationCOntextをnewして（テストクラス共通で使用する） すべてのレコードを削除し レコードを二件挿入する
+	 */
+	@Before
+	public void before() {
+		// テーブルがない場合、テーブルを作成する
+		try {
+			stmt.executeUpdate("CREATE TABLE flight_plan (    dbc smallint NOT NULL,    departure character varying NOT NULL,    dept_longitude numeric(10,6) NOT NULL,dept_latitude numeric(10,6) NOT NULL,    dept_time time without time zone NOT NULL,    arrival character varying NOT NULL,    arriv_longitude numeric(10,6) NOT NULL,    arriv_latitude numeric(10,6) NOT NULL,    arriv_time time without time zone NOT NULL,one_longitude numeric(10,6) NOT NULL,    one_latitude numeric(10,6) NOT NULL,    one_time time without time zone NOT NULL,    two_longitude numeric(10,6) NOT NULL,    two_latitude numeric(10,6) NOT NULL,    two_time time without time zone NOT NULL,three_longitude numeric(10,6) NOT NULL,    three_latitude numeric(10,6) NOT NULL,    three_time time without time zone NOT NULL,    four_longitude numeric(10,6) NOT NULL,    four_latitude numeric(10,6) NOT NULL,    four_time time without time zone NOT NULL);");
+		} catch (SQLException e) {
+			// e.printStackTrace();
+			System.out.println("すでにテーブルが存在する");
+		}
+		// すべてのレコードを削除する
+		System.out.println("@test");
+
+		TestDao dao = context.getBean("testDao", TestDao.class);
+		dao.deleteAll();
+		// 期待値をつめたbeanを二個作製し、DBにinsertする
+
+		TestMock moc = new TestMock();
+		//DBC=１とDBC=11のフライトプランを詰める
+		FlightPlanBean bean = moc.mockSet();
+		FlightPlanBean bean2 = moc.mockSetSI();
+		dao.insertOne(bean);
+		dao.insertOne(bean2);
+	}
+
+	/**
+	 * flight_planテーブルがあってもなくても削除する DB接続失敗テスト用の前処理
+	 */
+	public void dropTbl() {
+		try {
+			stmt.executeUpdate("drop table flight_plan ;");
+		} catch (PSQLException e) {
+			System.out.println("drop　error");
+			// e.printStackTrace();
+		} catch (SQLException e) {
+			System.out.println("drop　error");
+		}
+	}
+
+	/**
+	 * フライトプランテーブルからデータをすべて削除する 一件もデータが存在しない場合のテスト用前処理
+	 */
+	public void deleteAll() {
+
+		// すべてのレコードを削除する
+		TestDao dao = context.getBean("testDao", TestDao.class);
+		dao.deleteAll();
+
+	}
+
+	/****************** 準備エリア↑　ここまで **************************/
+
+
+	/**
+	 * 入力値がから文字の場合。複数件検索成功
+	 * dbc = ""
+	 */
+	@Test
+	public void DbSearch_AllSearch_gets_records_003_001() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっている　
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch("");
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.SUCCESS));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList.size(),is(Prop.ALL_RECORDE_NUM));
+	}	
+
+	/**
+	 * 入力値がから文字の場合。検索結果ﾅｼ。
+	 * 前処理でDBのレコードを全件落とす。
+	 * dbc = ""
+	 */
+	@Test
+	public void DbSearch_AllSearch_no_recodes_003_002() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっているので、レコードを全件削除する
+		deleteAll();
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch("");
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果の評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.FAILED));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList,is(nullValue()));
+	}
+	/**
+	 * 入力値がから文字の場合。複数件検索成功
+	 * dbc = null
+	 */
+	@Test
+	public void DbSearch_AllSearch_gets_records_003_003() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっている　
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch(null);
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.SUCCESS));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList.size(),is(Prop.ALL_RECORDE_NUM));
+	}	
+
+	/**
+	 * 入力値がから文字の場合。検索結果ﾅｼ。
+	 * 前処理でDBのレコードを全件落とす。
+	 * dbc = null
+	 */
+	@Test
+	public void DbSearch_AllSearch_no_recodes_003_004() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっているので、レコードを全件削除する
+		deleteAll();
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch(null);
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果の評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.FAILED));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList,is(nullValue()));				
+	}	
+	
+	/**
+	 * 入力値がから文字の場合。データベース接続失敗
+	 * dbc = ""
+	 */
+	@Test
+	public void DbSearch_AllSearch_DBAccess_NG_003_005() {
+		
+		//前準備としてテーブルを落とす
+		dropTbl();
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch("");
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.FAILED));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.FAILED));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList,is(nullValue()));
+	}	
+		
+
+
+	/**
+	 * 入力値が整数値の場合。単一検索成功
+	 * 前準備として、レコードを二件登録した状態で開始する。
+	 * dbc = 11
+	 */
+	@Test
+	public void DbSearch_SingleSearch_get_record_004_001() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっている　
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch(Short.toString(Prop.DBC_SI));
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		FlightPlanBean actualFlightPlanBean =actualList.get(Prop.FIRST_OBJECT);
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.SUCCESS));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList.size(),is(Prop.SINGLE_RECODE));
+		//メソッドに渡したDBCと、戻ってきたDBCが等しいか評価
+		assertThat(actualFlightPlanBean.getDbc(),is(Prop.DBC_SI));
+	}		
+	/**
+	 * 入力値が整数値の場合。単一検索、結果なし。
+	 * 前準備として、レコードを二件登録した状態で開始する。
+	 * dbc = 34
+	 */
+	@Test
+	public void DbSearch_SingleSearch_no_records_004_002() {
+		
+		//前準備のbeforeメソッドで必ずDBのレコード数が2件になるようになっている　
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch(Short.toString(Prop.DBC_ERR));
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.SUCCESS));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.FAILED));
+		//リストのサイズとDBのレコード件数が一致するかの評価
+		assertThat(actualList,is(nullValue()));
+	}	
+	/**
+	 * 入力値が整数値の場合。データベース接続失敗
+	 * dbc = 11
+	 */
+	@Test
+	public void DbSearch_SingleSearch_DBAccess_NG_004_003() {
+		
+		//前準備としてテーブルを落とす
+		dropTbl();
+		
+		ApServerDbSearch oapserverdbsearch = new ApServerDbSearch();
+		//実行 実効値を詰める変数は命名規則として頭にactualをつける
+		DbResultBean actualtbean  = oapserverdbsearch.DbSearch("");
+		ArrayList<FlightPlanBean> actualList = actualtbean.getFlightplanlist();
+		
+		//DB接続フラグが正常か否かの評価
+		assertThat(actualtbean.getDbconnectionflag(),is(Prop.FAILED));
+		//検索結果が歩かないか評価
+		assertThat(actualtbean.getDbsearchflag(),is(Prop.FAILED));
+		//リストがbyllが評価する
+		assertThat(actualList,is(nullValue()));
+	}	
+		
+	
+	}

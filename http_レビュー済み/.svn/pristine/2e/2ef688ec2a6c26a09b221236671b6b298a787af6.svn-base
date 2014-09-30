@@ -1,0 +1,189 @@
+package phase1.server.dao;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.beans.SamePropertyValuesAs.samePropertyValuesAs;
+import static org.junit.Assert.*;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.postgresql.util.PSQLException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import phase1.server.bean.FlightPlanBean;
+import phase1.server.logic.DatabaseService;
+
+import util.Prop;
+import util.TestDao;
+import util.TestMock;
+
+public class InsertDaoTest {
+
+
+	/******************準備エリア↓**************************/
+	/**
+	 * データベースへの接続設定を行う
+	 */
+	public static ApplicationContext context;
+
+	ResultSet rs = null;
+	static Statement stmt = null;
+	static Connection conn = null;
+	
+	@Before
+	public  void before() {
+		// テーブルがない場合、テーブルを作成する
+		try {
+			stmt.executeUpdate("CREATE TABLE flight_plan (    dbc smallint NOT NULL,    departure character varying NOT NULL,    dept_longitude numeric(10,6) NOT NULL,dept_latitude numeric(10,6) NOT NULL,    dept_time time without time zone NOT NULL,    arrival character varying NOT NULL,    arriv_longitude numeric(10,6) NOT NULL,    arriv_latitude numeric(10,6) NOT NULL,    arriv_time time without time zone NOT NULL,one_longitude numeric(10,6) NOT NULL,    one_latitude numeric(10,6) NOT NULL,    one_time time without time zone NOT NULL,    two_longitude numeric(10,6) NOT NULL,    two_latitude numeric(10,6) NOT NULL,    two_time time without time zone NOT NULL,three_longitude numeric(10,6) NOT NULL,    three_latitude numeric(10,6) NOT NULL,    three_time time without time zone NOT NULL,    four_longitude numeric(10,6) NOT NULL,    four_latitude numeric(10,6) NOT NULL,    four_time time without time zone NOT NULL);");
+		} catch (SQLException e) {
+			System.out.println("すでにテーブルは存在する");;
+		}
+		//すべてのレコードを削除する
+		context = new ClassPathXmlApplicationContext("/META-INF/spring/integration/applicationContext_for_Test.xml");
+		TestDao dao =context.getBean("testDao",TestDao.class);
+		dao.deleteAll();
+	}
+	
+
+	/**
+	 * 設定ファイルを用いずにDB接続を行うための準備
+	 * 
+	 * @throws Exception
+	 */
+	@BeforeClass
+	public static void beforeClass() {
+
+		// Oracle JDBC Driverのロード
+		try {
+			Class.forName("org.postgresql.Driver");
+			// Oracle8iに接続
+			conn = DriverManager
+					.getConnection("jdbc:postgresql://localhost:5432/phase_one?user=postgres&password=postgres");
+			// ステートメントを作成
+			stmt = conn.createStatement();
+		} catch (ClassNotFoundException e) {
+			System.out.println("ファイルが見つからないエラー　DBのJDBC設定");
+		} catch (SQLException e) {
+			System.out.println("SQLえくせぷしょん");
+		}
+
+	}
+
+
+	/**
+	 * flight_planテーブルがあってもなくても削除する DB接続失敗テスト用の前処理
+	 */
+	public void dropTbl() {
+		try {
+			stmt.executeUpdate("drop table flight_plan ;");
+		} catch (PSQLException e) {
+			System.out.println("err");
+			// e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 後処理　コネクションの類を閉じる
+	 */
+	@AfterClass
+	public static void afterClass() {
+		try {
+			if (stmt != null) {
+				stmt.close();
+			}
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+	}
+/******************準備エリア↑　ここまで**************************/
+	/**
+	 * 一見挿入　DB接続失敗
+	 */
+	@Test
+	public void insertOne_DBNG_003_001() {
+		//前準備としてテーブルを削除する
+		dropTbl();
+
+		//実行値を格納する変数宣言
+		DatabaseService ds =new DatabaseService();
+	
+		//実行値の取得
+		TestMock moc = new TestMock();
+		FlightPlanBean actualBean = moc.mockSet();
+		boolean actualResult = ds.executeInsert(actualBean);
+		
+		//DBとインサート内容の比較          エラーるから削除 テーブルおとしてるし
+		//assertThat(dao.countAll(),is(Prop.NO_RECODES_SIZE));
+		//DB接続フラグ照合
+		assertThat(actualResult,is(Prop.FAILED));
+	}
+	/**
+	 * 一見挿入　DBC重複なし
+	 */
+	@Test
+	public void insertOne_DBOK_No_Duplicate_003_002() {
+
+		DatabaseService ds =new DatabaseService();
+		TestDao dao =context.getBean("testDao",TestDao.class);
+		
+		//実行値の取得
+		TestMock moc = new TestMock();
+		FlightPlanBean actualBean = moc.mockSet();
+		boolean actualResult = ds.executeInsert(actualBean);
+		
+		//実行値（DB値）の取得
+		FlightPlanBean expectedBean = dao.selectOne(actualBean.getDbc());
+		
+
+		//DBとインサート内容の比較           
+		assertThat(actualBean,is(samePropertyValuesAs(expectedBean)));
+
+		//DB接続フラグ照合
+		assertThat(actualResult,is(Prop.SUCCESS));
+	}
+	
+	/**
+	 * 一件挿入　
+	 */
+	@Test
+	public void insertOne_DBOK_Duplicate_003_003() {
+		DatabaseService ds =new DatabaseService();
+		TestDao dao =context.getBean("testDao",TestDao.class);
+		
+		
+		//前準備として重複するDBCを登録する
+		TestMock moc = new TestMock();
+		FlightPlanBean duplicateBean = moc.mockSet3(Prop.DBC1);
+		dao.insertOne(duplicateBean);
+		
+		//実行値の取得
+		//前準備で登録したDBCと同じDBCを登録する
+		FlightPlanBean actualBean = moc.mockSet4(duplicateBean.getDbc());
+		boolean actualResult = ds.executeInsert(actualBean);
+		
+		//実行値（DB値）の取得
+		FlightPlanBean expectedBean = dao.selectOne(actualBean.getDbc());
+		
+
+		//DBとインサート内容の比較           
+		assertThat(actualBean,is(samePropertyValuesAs(expectedBean)));
+
+		//DB接続フラグ照合
+		assertThat(actualResult,is(Prop.SUCCESS));
+	}
+	
+}
